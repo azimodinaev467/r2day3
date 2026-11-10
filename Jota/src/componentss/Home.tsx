@@ -1,139 +1,67 @@
-
-import { useState } from "react";
-import { useAtomValue, useSetAtom } from "jotai";
-
-import {
-  dataJotai,
-  addUser,
-  deleteUser,
-  editUser,
-} from "../store/ST";
-
-import type { User } from "../store/ST";
-
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-
-import {
-  Dialog,
-  DialogContent, DialogHeader, DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog";
+import { addUser, deleteUser, editUser } from '@/rediuser/couter'
+import type { RootState } from '@/store/store'
+import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 
 const Home = () => {
-  const users = useAtomValue(dataJotai);
+ const {data} = useSelector((store:RootState)=>store.counter)
+const dispatch  = useDispatch()
+const [elem,setElem] = useState({id:null,name:"",age:null,job:""})
+const handleSubmit =(event)=>{
+  event.preventDefault()
+  const newUser={
+    id:elem.id?elem.id:Date.now(),
+    name:event.target.elements.name.value,
+    age:event.target.age.value,
+    job:event.target.job.value,
+  }
+  elem.id? dispatch(editUser(newUser)):  dispatch(addUser(newUser))
+  event.target.reset()
+  setElem({id:null,name:"",age:null,job:""})
+}
 
-  const add = useSetAtom(addUser);
-  const remove = useSetAtom(deleteUser);
-  const edit = useSetAtom(editUser);
+const handleEdit =(e)=>{
+  setElem(e)
+}
 
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [editId, setEditId] = useState<number | null>(null);
-  const [open, setOpen] = useState(false);
+return (
+  <div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-[400px] mx-auto">
+      <Input defaultValue={elem.name} name="name" type="text" placeholder="Name" />
+      <Input defaultValue={elem.age ?? ''} name="age" type="number" placeholder="Age" />
+      <Input defaultValue={elem.job} name="job" type="text" placeholder="Job" />
 
-  const handleSelectEdit = (user: User) => {
-    setEditId(user.id);
-    setName(user.name);
-    setAge(String(user.age));
-    setOpen(true);
-  };
+      <Button type="submit">
+        {elem.id ? "save" : "submit"}
+      </Button>
+    </form>
 
-  const handleDelete = (id: number) => {
-    remove(id);
-  };
+    <div>
+      {
+        data.map((e) => {
+          return (
+            <Card key={e.id} className="flex gap-3 border p-4 rounded-2xl w-[400px] my-2 mx-auto">
+              <h1>Name: {e.name}</h1>
+              <p>Age: {e.age}</p>
+              <p>Job: {e.job}</p>
 
-  const handleSubmit = () => {
-    if (!name.trim() || !age) return;
+              <Button variant="destructive" onClick={() => dispatch(deleteUser(e.id))}>
+                delete
+              </Button>
 
-    if (editId !== null) {
-      edit({ id: editId, name, age: Number(age) });
-      setEditId(null);
-    } else {
-      add({ id: Date.now(), name, age: Number(age) });
-    }
-
-    setName("");
-    setAge("");
-    setOpen(false);
-  };
-
-  return (
-    <div className="p-6">
-
-      <Dialog open={open} onOpenChange={setOpen}>
-
-
-        <DialogTrigger asChild>
-          <Button
-            onClick={() => {
-              setEditId(null);
-              setName("");
-              setAge("");
-            }}
-          >
-            Add User
-          </Button>
-        </DialogTrigger>
-
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editId !== null ? "Edit User" : "Add User"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <Input
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-
-            <Input
-              placeholder="Age"
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-            />
-
-            <Button onClick={handleSubmit} className="w-full">
-              {editId !== null ? "Save Changes" : "Add User"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {users.map((user) => (
-        <div
-          key={user.id}
-          className="mt-4 flex items-center justify-between rounded-lg border p-4"
-        >
-          <div>
-            <h3 className="font-semibold">{user.name}</h3>
-            <p className="text-sm text-muted-foreground">{user.age}</p>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleSelectEdit(user)}
-            >
-              Edit
-            </Button>
-
-            <Button
-              variant="destructive"
-              onClick={() => handleDelete(user.id)}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      ))}
-
+              <Button variant="outline" onClick={() => handleEdit(e)}>
+                edit
+              </Button>
+            </Card>
+          )
+        })
+      }
     </div>
-  );
-};
+  </div>
+)
+}
 
-export default Home;
+export default Home
